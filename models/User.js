@@ -9,10 +9,12 @@ const UserSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     resetPasswordToken: { type: String },
     resetPasswordExpire: { type: Date },
+    profilePicture: { type: String, default: "" },
+    bio: { type: String, default: "" },
   },
   { timestamps: true }
 );
-
+// Hash password before saving
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
