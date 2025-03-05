@@ -1,4 +1,4 @@
-// User Model 
+// User Model
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -82,7 +82,6 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-
 //  Reset Password
 exports.resetPassword = async (req, res) => {
   try {
@@ -109,13 +108,13 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// logout 
+// logout
 
 exports.logout = async (req, res) => {
   res.json({ message: "User logged out successfully" });
 };
 
-// Get User
+// Get User profile
 exports.getProfile = async (req, res) => {
   try {
     if (!req.user) {
@@ -128,6 +127,22 @@ exports.getProfile = async (req, res) => {
       email: req.user.email,
       createdAt: req.user.createdAt,
     });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Update user profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, bio, profilePicture } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { name, bio, profilePicture },
+      { new: true }
+    );
+
+    res.json(user);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }

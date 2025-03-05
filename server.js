@@ -3,16 +3,19 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const journalRoutes = require("./routes/journalRoutes");
+const progressRoutes = require("./routes/progressRoutes");
 
 dotenv.config();
 connectDB();
 
 const app = express();
-
 app.use(express.json());
 app.use(cors());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/journal", journalRoutes);
+app.use("/api/progress", progressRoutes);
 
 app.get("/", (req, res) => res.send("Backend Running!"));
 
