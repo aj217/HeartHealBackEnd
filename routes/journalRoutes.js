@@ -7,6 +7,6 @@ const protect = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.post("/", protect, saveJournal);
-router.get("/", protect, getJournals);
+router.get("/", protect, getJournals); // Supports pagination
 
 module.exports = router;

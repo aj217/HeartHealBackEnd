@@ -1,15 +1,13 @@
 const mongoose = require("mongoose");
 
-const JournalSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  text: { type: String, required: true },
-  mood: {
-    type: String,
-    enum: ["happy", "sad", "neutral", "angry", "excited"],
-    default: "neutral",
+const JournalSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    text: { type: String, required: true },
+    mood: { type: String },
+    images: [{ type: String }], // Optional images
   },
-  images: [{ type: String }], // Array of image URLs 
-  createdAt: { type: Date, default: Date.now },
-});
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("Journal", JournalSchema);
