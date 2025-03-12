@@ -6,4 +6,7 @@ const ResetTokenSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true },
 });
 
+// Indexing for automatic cleanup of expired tokens
+ResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 module.exports = mongoose.model("ResetToken", ResetTokenSchema);

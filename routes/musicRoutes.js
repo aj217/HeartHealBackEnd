@@ -1,9 +1,14 @@
 const express = require("express");
 const axios = require("axios");
 const querystring = require("querystring");
+const NodeCache = require("node-cache");
+const rateLimit = require("express-rate-limit");
+const Music = require("../models/Music");
+const protect = require("../middleware/authMiddleware");
 require("dotenv").config();
 
 const router = express.Router();
+const cache = new NodeCache({ stdTTL: 3600 }); // Cache results for 1 hour
 let accessToken = null;
 
 // Function to Get Spotify Access Token
@@ -17,22 +22,17 @@ const getSpotifyToken = async () => {
           Authorization:
             "Basic " +
             Buffer.from(
-              process.env.SPOTIFY_CLIENT_ID +
-                ":" +
-                process.env.SPOTIFY_CLIENT_SECRET
+              `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
             ).toString("base64"),
           "Content-Type": "application/x-www-form-urlencoded",
         },
       }
     );
     accessToken = response.data.access_token;
-    console.log("🔹 New Spotify Access Token:", accessToken);
+    console.log("New Spotify Access Token Acquired");
 
-    // Automatically refresh token before it expires (after 1 hour)
-    setTimeout(() => {
-      console.log("Refreshing Spotify Token...");
-      getSpotifyToken();
-    }, 3600 * 1000); // 1 hour
+    // Automatically refresh token every hour
+    setTimeout(getSpotifyToken, 3600 * 1000);
   } catch (error) {
     console.error(
       "Error getting Spotify token:",
@@ -44,106 +44,94 @@ const getSpotifyToken = async () => {
 // Middleware to Ensure Access Token is Available
 const ensureSpotifyToken = async (req, res, next) => {
   if (!accessToken) {
-    console.log("Getting new Spotify token...");
+    console.log("Acquiring new Spotify token...");
     await getSpotifyToken();
   }
   next();
 };
 
-// Search for Any Song, Artist, or Album
-router.get("/search", ensureSpotifyToken, async (req, res) => {
-  const { query, type = "track" } = req.query; // `type` can be "track", "artist", or "album"
-  if (!query)
-    return res
-      .status(400)
-      .json({ message: "Please provide a search query" });
+// Rate Limiting Middleware (Prevents API Abuse)
+const musicLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 20, // Limit to 20 requests per 10 minutes
+  message: "Too many requests, please slow down.",
+});
 
-  try {
-    const response = await axios.get(
-      `${process.env.SPOTIFY_API_URL}/search?q=${encodeURIComponent(
-        query
-      )}&type=${type}&limit=10`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
+// Search for Any Song, Artist, or Album (Stores in DB)
+router.get(
+  "/search",
+  protect,
+  musicLimiter,
+  ensureSpotifyToken,
+  async (req, res) => {
+    const { query, type = "track" } = req.query;
+    if (!query)
+      return res
+        .status(400)
+        .json({ message: "Please provide a search query" });
 
-    let results;
-    if (type === "track") {
-      results = response.data.tracks.items.map((track) => ({
+    // Check cache for existing results
+    const cacheKey = `${query}-${type}`;
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      console.log("Returning cached search results.");
+      return res.json(cachedData);
+    }
+
+    try {
+      const response = await axios.get(
+        `${process.env.SPOTIFY_API_URL}/search?q=${encodeURIComponent(
+          query
+        )}&type=${type}&limit=10`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      let results = response.data.tracks.items.map((track) => ({
         name: track.name,
         artist: track.artists.map((artist) => artist.name).join(", "),
         album: track.album.name,
         url: track.external_urls.spotify,
         image: track.album.images[0]?.url || null,
-        preview_url: track.preview_url || null, // Short audio preview
+        preview_url: track.preview_url || null,
       }));
-    } else if (type === "artist") {
-      results = response.data.artists.items.map((artist) => ({
-        name: artist.name,
-        genres: artist.genres.join(", "),
-        followers: artist.followers.total,
-        url: artist.external_urls.spotify,
-        image: artist.images[0]?.url || null,
-      }));
-    } else {
-      results = response.data.albums.items.map((album) => ({
-        name: album.name,
-        artist: album.artists.map((artist) => artist.name).join(", "),
-        release_date: album.release_date,
-        url: album.external_urls.spotify,
-        image: album.images[0]?.url || null,
-      }));
-    }
 
-    res.json({ query, type, results });
-  } catch (error) {
-    console.error(
-      "Error searching Spotify:",
-      error.response?.data || error.message
-    );
-    res
-      .status(500)
-      .json({
-        message: "Error fetching music from Spotify",
-        error: error.response?.data || error.message,
+      // Store Search in MongoDB
+      await Music.create({
+        user: req.user.id,
+        searchQuery: query,
+        searchType: type,
+        results,
       });
+
+      // Cache the result
+      cache.set(cacheKey, { query, type, results });
+
+      res.json({ query, type, results });
+    } catch (error) {
+      console.error(
+        "Error searching Spotify:",
+        error.response?.data || error.message
+      );
+      res
+        .status(500)
+        .json({
+          message: " Error fetching music from Spotify",
+          error: error.response?.data || error.message,
+        });
+    }
   }
-});
+);
 
-// Suggest Songs Based on Mood (No Predefined Playlists)
-router.get("/suggest/:mood", ensureSpotifyToken, async (req, res) => {
-  const mood = req.params.mood.toLowerCase();
-  const searchQuery = `${mood} music`; // Example: "motivational music"
-
+// Fetch User's Search History
+router.get("/history", protect, async (req, res) => {
   try {
-    console.log(`Searching Spotify for: ${searchQuery}`);
-
-    const response = await axios.get(
-      `${process.env.SPOTIFY_API_URL}/search?q=${encodeURIComponent(
-        searchQuery
-      )}&type=track&limit=10`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-
-    console.log("Successfully fetched mood-based tracks from Spotify!");
-
-    const tracks = response.data.tracks.items.map((track) => ({
-      name: track.name,
-      artist: track.artists.map((artist) => artist.name).join(", "),
-      url: track.external_urls.spotify,
-      image: track.album.images[0]?.url || null,
-      preview_url: track.preview_url || null, // Optional: Short preview
-    }));
-
-    res.json({ mood, tracks });
-  } catch (error) {
-    console.error(
-      "Error fetching mood-based music:",
-      error.response?.data || error.message
-    );
-    res.status(500).json({
-      message: "Error fetching mood-based music from Spotify",
-      error: error.response?.data || error.message,
+    const history = await Music.find({ user: req.user.id }).sort({
+      createdAt: -1,
     });
+    res.json(history);
+  } catch (error) {
+    console.error(" Error fetching search history:", error.message);
+    res.status(500).json({ message: "⚠️ Error fetching search history" });
   }
 });
 

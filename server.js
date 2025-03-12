@@ -1,59 +1,74 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const compression = require("compression");
+const helmet = require("helmet");
+const morgan = require("morgan");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const journalRoutes = require("./routes/journalRoutes");
 const progressRoutes = require("./routes/progressRoutes");
 const quoteRoutes = require("./routes/quoteRoutes");
 const musicRoutes = require("./routes/musicRoutes");
-const rateLimit = require("express-rate-limit");
-const NodeCache = require("node-cache");
+const affirmationRoutes = require("./routes/affirmationRoutes");
+const errorHandler = require("./middleware/errorMiddleware");
+const milestoneRoutes = require("./routes/milestoneRoutes");
+const apiLimiter = require("./config/rateLimitConfig");
 
 // Load environment variables
 dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+connectDB().catch((err) => {
+  console.error(`Database Connection Error: ${err.message}`);
+  process.exit(1);
+});
 
 // Initialize Express app
 const app = express();
+
+// Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: process.env.ALLOWED_ORIGINS || "*" })); // Secure CORS settings
+app.use(compression());
+app.use(helmet());
+app.use(morgan("combined")); // Logs requests (useful for debugging & monitoring)
 
-// Initialize Cache (Store data for 10 minutes)
-const cache = new NodeCache({ stdTTL: 600 });
-
-// Middleware to check cache before fetching new data
-const checkCache = (req, res, next) => {
-  const key = req.originalUrl;
-  const cachedData = cache.get(key);
-  if (cachedData) {
-    console.log("Returning cached data");
-    return res.json(cachedData);
-  }
-  next();
-};
-
-// API Rate Limiting (100 requests per 10 minutes)
-const apiLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 100, // Max 100 requests per IP
-  message: "Too many requests, please try again later.",
-});
-
-// Apply rate limit to all routes
+// Apply rate limit to all API routes
 app.use("/api", apiLimiter);
 
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/journal", journalRoutes);
 app.use("/api/progress", progressRoutes);
-app.use("/api/quotes", checkCache, quoteRoutes); // Cache applied to Quotes API
+app.use("/api/quotes", quoteRoutes);
 app.use("/api/music", musicRoutes);
+app.use("/api/milestones", milestoneRoutes);
+app.use("/api/affirmations", affirmationRoutes);
 
 // Home Route
 app.get("/", (req, res) => res.send("Backend Running!"));
 
+// 404 Route Handling (for unknown routes)
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found!" });
+});
+
+// Error Handling Middleware
+app.use(errorHandler);
+
+// Handle Unhandled Promise Rejections
+process.on("unhandledRejection", (err) => {
+  console.log(`Unhandled Promise Rejection: ${err.message}`);
+  process.exit(1);
+});
+
+// Handle Uncaught Exceptions
+process.on("uncaughtException", (err) => {
+  console.log(`Uncaught Exception: ${err.message}`);
+  process.exit(1);
+});
+
+// Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
