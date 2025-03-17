@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const AffirmationSchema = new mongoose.Schema({
   text: { type: String, required: true },
   category: { type: String, default: "general" },
+  mood: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -5,7 +5,7 @@ const JournalSchema = new mongoose.Schema({
   text: { type: String, required: true },
   mood: { type: String, enum: ["happy", "sad", "neutral", "angry", "excited"] },
   images: [{ type: String }], // Array of image URLs
-  moodAnalysis: { type: String, default: "" }, // Optional for AI analysis
+  moodAnalysis: { type: String, default: "" }, 
   createdAt: { type: Date, default: Date.now },
 });
 

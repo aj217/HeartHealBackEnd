@@ -6,12 +6,14 @@ const UserSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
-    emailVerified: { type: Boolean, default: false }, // New field
+    emailVerified: { type: Boolean, default: false },
     resetPasswordToken: { type: String },
     resetPasswordExpire: { type: Date },
-    refreshToken: { type: String }, // Optional: for JWT refresh strategy
+    refreshToken: { type: String },
     profilePicture: { type: String, default: "" },
     bio: { type: String, default: "" },
+    level: { type: Number, default: 1 }, 
+    XP: { type: Number, default: 0 }, 
   },
   { timestamps: true }
 );

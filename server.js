@@ -14,6 +14,8 @@ const affirmationRoutes = require("./routes/affirmationRoutes");
 const errorHandler = require("./middleware/errorMiddleware");
 const milestoneRoutes = require("./routes/milestoneRoutes");
 const apiLimiter = require("./config/rateLimitConfig");
+const challengeRoutes = require("./routes/challengeRoutes");
+const recommendationsRoutes = require("./routes/recommendationsRoutes");
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +47,9 @@ app.use("/api/quotes", quoteRoutes);
 app.use("/api/music", musicRoutes);
 app.use("/api/milestones", milestoneRoutes);
 app.use("/api/affirmations", affirmationRoutes);
+app.use("/api/challenges", challengeRoutes);
+app.use("/api/achievements", achievementRoutes);
+app.use("/api/recommendations", recommendationsRoutes);
 
 // Home Route
 app.get("/", (req, res) => res.send("Backend Running!"));

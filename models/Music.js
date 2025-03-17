@@ -18,6 +18,7 @@ const MusicSchema = new mongoose.Schema({
       preview_url: String,
     },
   ],
+  mood: { type: String }, 
   lastPlayedAt: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
 });
