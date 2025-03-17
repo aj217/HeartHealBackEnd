@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const AchievementSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   description: { type: String, required: true },
-  icon: { type: String }, // URL to the badge icon
+  icon: { type: String, default: "/images/default_badge.png" }, // ADDED DEFAULT
   xpReward: { type: Number, default: 100 },
   criteria: {
     type: String,
