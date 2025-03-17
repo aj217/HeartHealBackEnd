@@ -1,9 +1,10 @@
+
 const express = require("express");
-const { getRecommendations } = require("../controllers/recommendationsController");
+const { getAchievements } = require("../controllers/achievementController");
 const protect = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.get("/", protect, getRecommendations);
+router.get("/", protect, getAchievements);
 
 module.exports = router;
