@@ -16,6 +16,7 @@ const milestoneRoutes = require("./routes/milestoneRoutes");
 const apiLimiter = require("./config/rateLimitConfig");
 const challengeRoutes = require("./routes/challengeRoutes");
 const recommendationsRoutes = require("./routes/recommendationsRoutes");
+const achievementRoutes = require("./routes/achievementRoutes");
 
 // Load environment variables
 dotenv.config();
