@@ -13,9 +13,19 @@ const getChallenges = async (req, res) => {
         description:
           "Write a journal entry about something you're grateful for.",
         xpReward: 75,
-        date: today,
+        date: new Date(today), // Convert today to Date type
       });
-      challenge = await newChallenge.save();
+      try {
+        challenge = await newChallenge.save();
+      } catch (error) {
+        // Handle duplicate key error
+        if (error.code === 11000) {
+          console.log("Duplicate challenge creation attempt. Retrying...");
+          challenge = await Challenge.findOne({ date: today }); // Fetch existing challenge
+        } else {
+          throw error; // Re-throw other errors
+        }
+      }
     }
 
     res.json(challenge);
@@ -34,10 +44,15 @@ const completeChallenge = async (req, res) => {
       return res.status(404).json({ message: "No challenge found for today" });
     }
 
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     let progress = await Progress.findOne({ user: req.user.id });
 
     if (!progress) {
-      progress = new Progress({ user: req.user.id });
+      progress = new Progress({ user: req.user.id, xp: 0, level: 1 }); // Initialize XP and level
     }
 
     // Check if the challenge has already been completed
@@ -49,13 +64,10 @@ const completeChallenge = async (req, res) => {
 
     // Update progress
     progress.dailyChallengesCompleted.push(today);
-    progress.xp = (progress.xp || 0) + challenge.xpReward;
-    await progress.save();
-
-    // Update user level (example logic)
-    const user = await User.findById(req.user.id);
-    user.xp = (user.xp || 0) + challenge.xpReward;
+    progress.xp += challenge.xpReward;
+    user.xp += challenge.xpReward; // Update user's XP
     user.level = Math.floor(user.xp / 1000) + 1; // Example leveling system
+    await progress.save();
     await user.save();
 
     res.json({

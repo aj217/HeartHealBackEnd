@@ -1,6 +1,7 @@
 const Journal = require("../models/Journal");
 const Milestone = require("../models/Milestone");
 const sentiment = require("sentiment"); // Import sentiment analysis library
+const Achievement = require("../models/Achievement");
 
 const achievementCriteria = [
   {
@@ -66,6 +67,7 @@ const saveJournal = async (req, res) => {
 
     // Check for new achievements
     for (const achievement of achievementCriteria) {
+      // Get the Achievement from the DB
       const alreadyAchieved = await Milestone.findOne({
         user: req.user.id,
         milestoneType: achievement.name,
