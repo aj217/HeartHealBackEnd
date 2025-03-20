@@ -28,7 +28,7 @@ router.post("/logout", logout);
 router.get("/profile", protect, getProfile);
 router.put("/update", protect, updateProfile);
 
-// Email verification (New)
+// Email verification (placeholder)
 router.get("/verify-email/:token", (req, res) => {
   res.json({ message: "Email verification route (implement logic here)" });
 });
