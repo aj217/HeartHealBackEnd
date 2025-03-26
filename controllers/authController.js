@@ -173,7 +173,7 @@ exports.logout = async (req, res) => {
   res.json({ message: "User logged out successfully" });
 };
 
-// GET USER PROFILE
+// GetProfile page 
 exports.getProfile = async (req, res) => {
   try {
     if (!req.user) {
@@ -183,6 +183,8 @@ exports.getProfile = async (req, res) => {
       id: req.user._id,
       name: req.user.name,
       email: req.user.email,
+      bio: req.user.bio, // Added bio field
+      profilePicture: req.user.profilePicture, // Added profile picture
       createdAt: req.user.createdAt,
     });
   } catch (error) {
@@ -190,17 +192,29 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+
 // UPDATE USER PROFILE
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, bio, profilePicture } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { name, bio, profilePicture },
-      { new: true }
-    );
+    // Create an update object with the text fields
+    let updateData = {
+      name: req.body.name,
+      bio: req.body.bio,
+    };
+    if (req.file) {
+      updateData.profilePicture = req.file.path;
+    }
+
+    // Update the user document
+    const user = await User.findByIdAndUpdate(req.user.id, updateData, {
+      new: true,
+    });
     res.json(user);
   } catch (error) {
+    console.error("Update error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+

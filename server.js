@@ -51,6 +51,7 @@ app.use("/api/affirmations", affirmationRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/recommendations", recommendationsRoutes);
+app.use("/uploads", express.static("uploads"));
 
 // Home Route
 app.get("/", (req, res) => res.send("Backend Running!"));

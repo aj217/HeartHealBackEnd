@@ -10,6 +10,7 @@ const {
   updateProfile,
 } = require("../controllers/authController");
 const protect = require("../middleware/authMiddleware");
+const upload = require("../middleware/upload"); 
 
 const router = express.Router();
 
@@ -26,7 +27,9 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 router.post("/logout", logout);
 router.get("/profile", protect, getProfile);
-router.put("/update", protect, updateProfile);
+
+// Apply the upload middleware to the update route
+router.put("/update", protect, upload.single("profilePicture"), updateProfile);
 
 // Email verification (placeholder)
 router.get("/verify-email/:token", (req, res) => {
