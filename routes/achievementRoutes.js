@@ -1,10 +1,8 @@
-
 const express = require("express");
-const { getAchievements } = require("../controllers/achievementController");
-const protect = require("../middleware/authMiddleware");
-
 const router = express.Router();
+const { protect } = require("../middleware/authMiddleware");
+const { getAchievements } = require("../controllers/achievementController");
 
-router.get("/", protect, getAchievements);
+router.get("/", protect, getAchievements); // GET /api/achievements
 
 module.exports = router;

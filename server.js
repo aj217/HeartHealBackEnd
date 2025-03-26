@@ -1,4 +1,7 @@
 const express = require("express");
+const fs = require("fs");
+const path = require("path"); 
+const multer = require("multer");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const compression = require("compression");
@@ -30,12 +33,18 @@ connectDB().catch((err) => {
 // Initialize Express app
 const app = express();
 
+// Ensure the uploads folder exists.
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 // Middleware
 app.use(express.json());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS || "*" })); // Secure CORS settings
 app.use(compression());
 app.use(helmet());
-app.use(morgan("combined")); // Logs requests (useful for debugging & monitoring)
+app.use(morgan("combined"));
 
 // Apply rate limit to all API routes
 app.use("/api", apiLimiter);
@@ -51,6 +60,8 @@ app.use("/api/affirmations", affirmationRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/recommendations", recommendationsRoutes);
+
+// Serve static files from the uploads folder.
 app.use("/uploads", express.static("uploads"));
 
 // Home Route
@@ -61,7 +72,16 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found!" });
 });
 
-// Error Handling Middleware
+// Global error handler to catch Multer errors and others.
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ message: err.message });
+  }
+  next(err);
+});
+
+// Error Handling Middleware (custom error handler)
 app.use(errorHandler);
 
 // Handle Unhandled Promise Rejections

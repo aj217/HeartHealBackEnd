@@ -1,5 +1,4 @@
 // authController.js
-
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -173,25 +172,26 @@ exports.logout = async (req, res) => {
   res.json({ message: "User logged out successfully" });
 };
 
-// GetProfile page 
+// GetProfile page
 exports.getProfile = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: "User not authenticated" });
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
+
     res.json({
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      bio: req.user.bio, // Added bio field
-      profilePicture: req.user.profilePicture, // Added profile picture
-      createdAt: req.user.createdAt,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      bio: user.bio,
+      profilePicture: user.profilePicture ? user.profilePicture : null,
+      createdAt: user.createdAt,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 // UPDATE USER PROFILE
 exports.updateProfile = async (req, res) => {
@@ -201,20 +201,23 @@ exports.updateProfile = async (req, res) => {
       name: req.body.name,
       bio: req.body.bio,
     };
+
+    // If a file is uploaded, add its path to updateData
     if (req.file) {
-      updateData.profilePicture = req.file.path;
+      updateData.profilePicture = `uploads/${req.file.filename}`;
     }
 
     // Update the user document
     const user = await User.findByIdAndUpdate(req.user.id, updateData, {
       new: true,
     });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     res.json(user);
   } catch (error) {
     console.error("Update error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
-
