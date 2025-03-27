@@ -11,14 +11,15 @@ const MusicSchema = new mongoose.Schema({
   results: [
     {
       name: String,
-      artist: String,
+      artists: [String], 
       album: String,
       url: String,
       image: String,
       preview_url: String,
     },
   ],
-  mood: { type: String }, 
+
+  mood: { type: String },
   lastPlayedAt: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
 });

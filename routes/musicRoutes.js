@@ -8,10 +8,10 @@ const protect = require("../middleware/authMiddleware");
 require("dotenv").config();
 
 const router = express.Router();
-const cache = new NodeCache({ stdTTL: 3600 }); // Cache results for 1 hour
+const cache = new NodeCache({ stdTTL: 3600 }); // Cache for 1 hour
 let accessToken = null;
 
-// Function to Get Spotify Access Token
+// --- Get Spotify Access Token ---
 const getSpotifyToken = async () => {
   try {
     const response = await axios.post(
@@ -29,10 +29,7 @@ const getSpotifyToken = async () => {
       }
     );
     accessToken = response.data.access_token;
-    console.log("New Spotify Access Token Acquired");
-
-    // Automatically refresh token every hour
-    setTimeout(getSpotifyToken, 3600 * 1000);
+    console.log("Spotify Access Token Acquired");
   } catch (error) {
     console.error(
       "Error getting Spotify token:",
@@ -41,23 +38,27 @@ const getSpotifyToken = async () => {
   }
 };
 
-// Middleware to Ensure Access Token is Available
+// --- Initial Token + Auto Refresh ---
+getSpotifyToken();
+setInterval(getSpotifyToken, 3600 * 1000); // Refresh every hour
+
+// --- Middleware: Ensure Token Exists ---
 const ensureSpotifyToken = async (req, res, next) => {
   if (!accessToken) {
-    console.log("Acquiring new Spotify token...");
+    console.log("Acquiring Spotify token...");
     await getSpotifyToken();
   }
   next();
 };
 
-// Rate Limiting Middleware (Prevents API Abuse)
+// --- Rate Limiting ---
 const musicLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 20, // Limit to 20 requests per 10 minutes
-  message: "Too many requests, please slow down.",
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  message: "Too many requests. Please try again later.",
 });
 
-// Search for Any Song, Artist, or Album (Stores in DB)
+// --- SEARCH Route ---
 router.get(
   "/search",
   protect,
@@ -66,11 +67,8 @@ router.get(
   async (req, res) => {
     const { query, type = "track" } = req.query;
     if (!query)
-      return res
-        .status(400)
-        .json({ message: "Please provide a search query" });
+      return res.status(400).json({ message: "Please provide a search query" });
 
-    // Check cache for existing results
     const cacheKey = `${query}-${type}`;
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
@@ -86,16 +84,15 @@ router.get(
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
-      let results = response.data.tracks.items.map((track) => ({
+      const results = response.data.tracks.items.map((track) => ({
         name: track.name,
-        artist: track.artists.map((artist) => artist.name).join(", "),
+        artists: track.artists.map((a) => a.name),
         album: track.album.name,
         url: track.external_urls.spotify,
         image: track.album.images[0]?.url || null,
         preview_url: track.preview_url || null,
       }));
 
-      // Store Search in MongoDB
       await Music.create({
         user: req.user.id,
         searchQuery: query,
@@ -103,7 +100,6 @@ router.get(
         results,
       });
 
-      // Cache the result
       cache.set(cacheKey, { query, type, results });
 
       res.json({ query, type, results });
@@ -112,17 +108,71 @@ router.get(
         "Error searching Spotify:",
         error.response?.data || error.message
       );
-      res
-        .status(500)
-        .json({
-          message: " Error fetching music from Spotify",
-          error: error.response?.data || error.message,
-        });
+      res.status(500).json({
+        message: "Error fetching music from Spotify",
+        error: error.response?.data || error.message,
+      });
     }
   }
 );
 
-// Fetch User's Search History
+// --- MOOD-BASED MUSIC Route ---
+router.get("/spotify", ensureSpotifyToken, async (req, res) => {
+  const { mood, limit = 10 } = req.query;
+  if (!mood)
+    return res.status(400).json({ message: "Please provide a mood parameter" });
+
+  const queryMap = {
+    happy: "happy upbeat",
+    calm: "calm relaxing",
+    sad: "sad emotional",
+    energetic: "energetic workout",
+  };
+
+  const query = queryMap[mood.toLowerCase()] || mood;
+  const searchLimit = parseInt(limit);
+
+  const cacheKey = `mood-${mood}-${searchLimit}`;
+  const cachedData = cache.get(cacheKey);
+  if (cachedData) {
+    console.log("Returning cached mood results.");
+    return res.json(cachedData);
+  }
+
+  try {
+    const response = await axios.get(
+      `${process.env.SPOTIFY_API_URL}/search?q=${encodeURIComponent(
+        query
+      )}&type=track&limit=${searchLimit}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    const results = response.data.tracks.items.map((track) => ({
+      name: track.name,
+      artists: track.artists.map((a) => a.name),
+      album: track.album.name,
+      url: track.external_urls.spotify,
+      image: track.album.images[0]?.url || null,
+      preview_url: track.preview_url || null,
+    }));
+
+    cache.set(cacheKey, { mood, results });
+
+    console.log(`Mood-based music fetched for mood: ${mood}`);
+    res.json({ mood, results });
+  } catch (error) {
+    console.error(
+      "Error fetching Spotify mood music:",
+      error.response?.data || error.message
+    );
+    res.status(500).json({
+      message: "Error fetching music from Spotify",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+// --- Search History Route ---
 router.get("/history", protect, async (req, res) => {
   try {
     const history = await Music.find({ user: req.user.id }).sort({
@@ -130,8 +180,8 @@ router.get("/history", protect, async (req, res) => {
     });
     res.json(history);
   } catch (error) {
-    console.error(" Error fetching search history:", error.message);
-    res.status(500).json({ message: "⚠️ Error fetching search history" });
+    console.error("Error fetching search history:", error.message);
+    res.status(500).json({ message: "Error fetching search history" });
   }
 });
 

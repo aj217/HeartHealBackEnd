@@ -1,6 +1,6 @@
 const express = require("express");
 const fs = require("fs");
-const path = require("path"); 
+const path = require("path");
 const multer = require("multer");
 const dotenv = require("dotenv");
 const cors = require("cors");
@@ -8,18 +8,22 @@ const compression = require("compression");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
+
+// Route files
 const authRoutes = require("./routes/authRoutes");
 const journalRoutes = require("./routes/journalRoutes");
 const progressRoutes = require("./routes/progressRoutes");
 const quoteRoutes = require("./routes/quoteRoutes");
 const musicRoutes = require("./routes/musicRoutes");
 const affirmationRoutes = require("./routes/affirmationRoutes");
-const errorHandler = require("./middleware/errorMiddleware");
 const milestoneRoutes = require("./routes/milestoneRoutes");
-const apiLimiter = require("./config/rateLimitConfig");
 const challengeRoutes = require("./routes/challengeRoutes");
 const recommendationsRoutes = require("./routes/recommendationsRoutes");
 const achievementRoutes = require("./routes/achievementRoutes");
+
+// Error and rate limiting middleware/configurations
+const errorHandler = require("./middleware/errorMiddleware");
+const apiLimiter = require("./config/rateLimitConfig");
 
 // Load environment variables
 dotenv.config();
@@ -46,7 +50,7 @@ app.use(compression());
 app.use(helmet());
 app.use(morgan("combined"));
 
-// Apply rate limit to all API routes
+// Apply rate limiting to all API routes
 app.use("/api", apiLimiter);
 
 // API Routes
@@ -81,18 +85,18 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Error Handling Middleware (custom error handler)
+// Custom error handling middleware
 app.use(errorHandler);
 
 // Handle Unhandled Promise Rejections
 process.on("unhandledRejection", (err) => {
-  console.log(`Unhandled Promise Rejection: ${err.message}`);
+  console.error(`Unhandled Promise Rejection: ${err.message}`);
   process.exit(1);
 });
 
 // Handle Uncaught Exceptions
 process.on("uncaughtException", (err) => {
-  console.log(`Uncaught Exception: ${err.message}`);
+  console.error(`Uncaught Exception: ${err.message}`);
   process.exit(1);
 });
 
