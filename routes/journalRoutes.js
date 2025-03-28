@@ -1,12 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
+const upload = require("../middleware/upload"); 
 const {
-  getJournals,
   saveJournal,
+  getJournals,
+  downloadJournal,
 } = require("../controllers/journalController");
 
-router.get("/", protect, getJournals); // GET /api/journal
-router.post("/", protect, saveJournal); // POST /api/journal
+// Routes
+router.get("/", protect, getJournals);
+router.post("/", protect, upload.array("images", 5), saveJournal);
+router.get("/download/:id", protect, downloadJournal);
 
 module.exports = router;

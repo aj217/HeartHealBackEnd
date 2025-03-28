@@ -45,10 +45,36 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.use(express.json());
-app.use(cors({ origin: process.env.ALLOWED_ORIGINS || "*" })); // Secure CORS settings
+
+// CORS fix for frontend running on 127.0.0.1:5500
+const allowedOrigins = ["http://localhost:5500", "http://127.0.0.1:5500"];
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(compression());
 app.use(helmet());
 app.use(morgan("combined"));
+
+// Serve static files from /uploads with correct headers
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin"); 
+    next();
+  },
+  express.static(path.join(__dirname, "uploads"))
+);
 
 // Apply rate limiting to all API routes
 app.use("/api", apiLimiter);
@@ -64,9 +90,6 @@ app.use("/api/affirmations", affirmationRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/recommendations", recommendationsRoutes);
-
-// Serve static files from the uploads folder.
-app.use("/uploads", express.static("uploads"));
 
 // Home Route
 app.get("/", (req, res) => res.send("Backend Running!"));
