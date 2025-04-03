@@ -1,14 +1,6 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
-const {
-  signup,
-  login,
-  forgotPassword,
-  resetPassword,
-  logout,
-  getProfile,
-  updateProfile,
-} = require("../controllers/authController");
+const authController = require("../controllers/authController"); 
 const protect = require("../middleware/authMiddleware");
 const upload = require("../middleware/upload");
 
@@ -21,12 +13,14 @@ const loginLimiter = rateLimit({
   message: "Too many login attempts, please try again later.",
 });
 
+// Authentication Routes using localStorage (JWT in Authorization header)
 router.post("/signup", authController.signup);
-router.post("/login", authController.login);
+router.post("/login", loginLimiter, authController.login);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password/:token", authController.resetPassword);
-router.get("/logout", authController.logout);
+router.post("/logout", authController.logout);
 
+// Protected Routes (require JWT token)
 router.get("/profile", protect, authController.getProfile);
 router.put(
   "/update",
@@ -35,7 +29,7 @@ router.put(
   authController.updateProfile
 );
 
-// Email verification (placeholder)
+// Placeholder for future email verification
 router.get("/verify-email/:token", (req, res) => {
   res.json({ message: "Email verification route (implement logic here)" });
 });

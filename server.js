@@ -34,9 +34,10 @@ connectDB().catch((err) => {
   process.exit(1);
 });
 
+// Initialize Express app
 const app = express();
 
-// Ensure uploads folder exists
+// Ensure the uploads folder exists.
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
@@ -45,11 +46,18 @@ if (!fs.existsSync(uploadsDir)) {
 // Middleware
 app.use(express.json());
 
-// CORS for frontend at localhost:5500 (no cookies needed)
+// CORS fix for frontend running on 127.0.0.1:5500
 const allowedOrigins = ["http://localhost:5500", "http://127.0.0.1:5500"];
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
 
@@ -57,7 +65,7 @@ app.use(compression());
 app.use(helmet());
 app.use(morgan("combined"));
 
-// Static file serving for uploaded images
+// Serve static files from /uploads with correct headers
 app.use(
   "/uploads",
   (req, res, next) => {
@@ -68,7 +76,7 @@ app.use(
   express.static(path.join(__dirname, "uploads"))
 );
 
-// Rate limiter
+// Apply rate limiting to all API routes
 app.use("/api", apiLimiter);
 
 // API Routes
@@ -83,15 +91,15 @@ app.use("/api/challenges", challengeRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/recommendations", recommendationsRoutes);
 
-// Home route
+// Home Route
 app.get("/", (req, res) => res.send("Backend Running!"));
 
-// 404 route
+// 404 Route Handling (for unknown routes)
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found!" });
 });
 
-// Handle multer errors and others
+// Global error handler to catch Multer errors and others.
 app.use((err, req, res, next) => {
   console.error(err);
   if (err instanceof multer.MulterError) {
@@ -100,20 +108,21 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Global error handler
+// Custom error handling middleware
 app.use(errorHandler);
 
-// Exit handling
+// Handle Unhandled Promise Rejections
 process.on("unhandledRejection", (err) => {
   console.error(`Unhandled Promise Rejection: ${err.message}`);
   process.exit(1);
 });
 
+// Handle Uncaught Exceptions
 process.on("uncaughtException", (err) => {
   console.error(`Uncaught Exception: ${err.message}`);
   process.exit(1);
 });
 
-// Start server
+// Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
