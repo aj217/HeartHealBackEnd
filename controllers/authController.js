@@ -76,12 +76,12 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "Strict",
-      secure: false, //  Set to true in production with HTTPS
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    });
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+  });
+
 
     res.json({ message: "Login successful" });
   } catch (error) {
