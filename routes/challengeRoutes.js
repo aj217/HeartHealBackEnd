@@ -1,13 +1,12 @@
 const express = require("express");
-const {
-  getChallenges,
-  completeChallenge,
-} = require("../controllers/challengeController");
-const protect = require("../middleware/authMiddleware");
-
 const router = express.Router();
+const auth = require("../middleware/authMiddleware");
+const {
+  completeChallenge,
+  getDailyChallenge,
+} = require("../controllers/challengeController");
 
-router.get("/", protect, getChallenges);
-router.post("/complete", protect, completeChallenge);
+router.get("/daily", auth, getDailyChallenge);
+router.post("/complete", auth, completeChallenge);
 
 module.exports = router;

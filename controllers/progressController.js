@@ -1,50 +1,53 @@
-const Progress = require("../models/Progress");
+const Journal = require("../models/Journal");
 
-// Get progress for a logged-in user
+// 🧠 Utility to calculate streak from journal dates
+function calculateStreak(dates) {
+  const sorted = dates
+    .map((d) => new Date(d).setHours(0, 0, 0, 0))
+    .sort((a, b) => b - a);
+
+  let streak = 0;
+  let today = new Date().setHours(0, 0, 0, 0);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const expectedDate = today - streak * 86400000;
+    if (sorted[i] === expectedDate) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
+// 📊 Get dashboard progress
 const getProgress = async (req, res) => {
   try {
-    const progress = await Progress.findOne({ user: req.user.id });
+    const userId = req.user.id;
+    const journals = await Journal.find({ user: userId });
 
-    if (!progress) {
-      return res.status(404).json({ message: "No progress data found" });
-    }
+    const journalCount = journals.length;
+    const moodStats = {};
+    const entryDates = [];
 
-    res.json(progress);
+    journals.forEach((entry) => {
+      const mood = entry.mood || "unspecified";
+      moodStats[mood] = (moodStats[mood] || 0) + 1;
+      entryDates.push(entry.createdAt);
+    });
+
+    const streak = calculateStreak(entryDates);
+
+    res.json({
+      journalCount,
+      moodStats,
+      streak,
+    });
   } catch (error) {
-    console.error("Error fetching progress:", error.message);
+    console.error("Error fetching dashboard progress:", error.message);
     res.status(500).json({ message: "Error fetching progress data" });
   }
 };
 
-// Update progress data (e.g., update streaks & milestones)
-const updateProgress = async (req, res) => {
-  try {
-    const { trackedActivities, journalStreaks, milestones } = req.body;
-
-    let progress = await Progress.findOne({ user: req.user.id });
-
-    if (!progress) {
-      // If no progress data exists, create a new entry
-      progress = new Progress({
-        user: req.user.id,
-        trackedActivities,
-        journalStreaks,
-        milestones,
-      });
-    } else {
-      // Update existing progress
-      if (trackedActivities) progress.trackedActivities = trackedActivities;
-      if (journalStreaks !== undefined)
-        progress.journalStreaks = journalStreaks;
-      if (milestones) progress.milestones = milestones;
-    }
-
-    await progress.save();
-    res.json({ message: "Progress updated successfully", progress });
-  } catch (error) {
-    console.error("Error updating progress:", error.message);
-    res.status(500).json({ message: "Error updating progress data" });
-  }
-};
-
-module.exports = { getProgress, updateProgress };
+module.exports = { getProgress };

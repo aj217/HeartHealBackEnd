@@ -12,8 +12,10 @@ const UserSchema = new mongoose.Schema(
     refreshToken: { type: String },
     profilePicture: { type: String, default: "" },
     bio: { type: String, default: "" },
-    level: { type: Number, default: 1 }, 
-    XP: { type: Number, default: 0 }, 
+    level: { type: Number, default: 1 },
+    xp: { type: Number, default: 0 },
+    challengeCompletedAt: { type: Date },
+    lastChallengeDate: { type: String }, // e.g., "2025-04-03"
   },
   { timestamps: true }
 );

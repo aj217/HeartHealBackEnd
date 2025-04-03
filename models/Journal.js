@@ -3,9 +3,13 @@ const mongoose = require("mongoose");
 const JournalSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   text: { type: String, required: true },
-  mood: { type: String, enum: ["happy", "sad", "neutral", "angry", "excited"] },
+  mood: {
+    type: String,
+    enum: ["happy", "sad", "neutral", "angry", "excited", "motivated"],
+  },
+
   images: [{ type: String }], // Array of image URLs
-  moodAnalysis: { type: String, default: "" }, 
+  moodAnalysis: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -1,33 +1,18 @@
 const Milestone = require("../models/Milestone");
 
-// Add a New Milestone
-exports.addMilestone = async (req, res) => {
+// Get all milestones for the logged-in user
+const getMilestones = async (req, res) => {
   try {
-    const { milestoneType } = req.body;
-    if (!milestoneType)
-      return res.status(400).json({ message: "Milestone type is required" });
-
-    const milestone = new Milestone({ user: req.user.id, milestoneType });
-    await milestone.save();
-
-    res
-      .status(201)
-      .json({ message: "Milestone added successfully", milestone });
+    const milestones = await Milestone.find({ user: req.user.id }).sort({
+      achievedAt: -1,
+    });
+    res.status(200).json(milestones);
   } catch (error) {
-    console.error("Error adding milestone:", error.message);
-    res.status(500).json({ message: "Server error" });
+    console.error(" Error fetching milestones:", error);
+    res.status(500).json({ message: "Failed to load milestones." });
   }
 };
 
-// Get All User Milestones
-exports.getMilestones = async (req, res) => {
-  try {
-    const milestones = await Milestone.find({ user: req.user.id }).sort({
-      createdAt: -1,
-    });
-    res.json(milestones);
-  } catch (error) {
-    console.error("Error fetching milestones:", error.message);
-    res.status(500).json({ message: "Server error" });
-  }
+module.exports = {
+  getMilestones,
 };

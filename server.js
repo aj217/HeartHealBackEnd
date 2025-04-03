@@ -8,6 +8,7 @@ const compression = require("compression");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
+const cookieParser = require("cookie-parser");
 
 // Route files
 const authRoutes = require("./routes/authRoutes");
@@ -45,6 +46,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.use(express.json());
+app.use(cookieParser());
 
 // CORS fix for frontend running on 127.0.0.1:5500
 const allowedOrigins = ["http://localhost:5500", "http://127.0.0.1:5500"];
@@ -70,7 +72,7 @@ app.use(
   "/uploads",
   (req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin"); 
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
     next();
   },
   express.static(path.join(__dirname, "uploads"))

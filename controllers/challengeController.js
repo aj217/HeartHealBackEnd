@@ -1,84 +1,89 @@
 const Challenge = require("../models/Challenge");
-const Progress = require("../models/Progress");
 const User = require("../models/User");
+const { selectDailyChallenge } = require("../utils/selectDailyChallenge");
 
-const getChallenges = async (req, res) => {
+// GET /api/challenges/daily
+const getDailyChallenge = async (req, res) => {
   try {
-    const today = new Date().toISOString().slice(0, 10); // Get today's date in YYYY-MM-DD format
-    let challenge = await Challenge.findOne({ date: today });
-
-    if (!challenge) {
-      // Create a new challenge if one doesn't exist for today
-      const newChallenge = new Challenge({
-        description:
-          "Write a journal entry about something you're grateful for.",
-        xpReward: 75,
-        date: new Date(today), // Convert today to Date type
-      });
-      try {
-        challenge = await newChallenge.save();
-      } catch (error) {
-        // Handle duplicate key error
-        if (error.code === 11000) {
-          console.log("Duplicate challenge creation attempt. Retrying...");
-          challenge = await Challenge.findOne({ date: today }); // Fetch existing challenge
-        } else {
-          throw error; // Re-throw other errors
-        }
-      }
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized user" });
     }
 
-    res.json(challenge);
-  } catch (error) {
-    console.error("Error fetching challenge:", error.message);
-    res.status(500).json({ message: "Error fetching challenge" });
-  }
-};
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-const completeChallenge = async (req, res) => {
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const challenge = await Challenge.findOne({ date: today });
+    const todayStr = new Date().toISOString().split("T")[0];
+    const challenge = await selectDailyChallenge();
 
-    if (!challenge) {
-      return res.status(404).json({ message: "No challenge found for today" });
-    }
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    let progress = await Progress.findOne({ user: req.user.id });
-
-    if (!progress) {
-      progress = new Progress({ user: req.user.id, xp: 0, level: 1 }); // Initialize XP and level
-    }
-
-    // Check if the challenge has already been completed
-    if (progress.dailyChallengesCompleted.includes(today)) {
-      return res
-        .status(400)
-        .json({ message: "Challenge already completed today" });
-    }
-
-    // Update progress
-    progress.dailyChallengesCompleted.push(today);
-    progress.xp += challenge.xpReward;
-    user.xp += challenge.xpReward; // Update user's XP
-    user.level = Math.floor(user.xp / 1000) + 1; // Example leveling system
-    await progress.save();
-    await user.save();
+    const isCompletedToday = user.lastChallengeDate === todayStr;
 
     res.json({
-      message: "Challenge completed successfully",
-      xp: challenge.xpReward,
-      level: user.level,
+      ...challenge.toObject(),
+      completed: isCompletedToday,
+      xp: user.xp || 0,
+      level: user.level || 1,
     });
   } catch (error) {
-    console.error("Error completing challenge:", error.message);
-    res.status(500).json({ message: "Error completing challenge" });
+    console.error("Failed to fetch daily challenge:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-module.exports = { getChallenges, completeChallenge };
+// POST /api/challenges/complete
+const completeChallenge = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized user" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    if (user.lastChallengeDate === todayStr) {
+      return res.status(400).json({
+        message: "Challenge already completed for today.",
+        xp: user.xp,
+        level: user.level,
+      });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const challenge = await Challenge.findOne({ assignedDate: today });
+    if (!challenge) {
+      return res
+        .status(404)
+        .json({ message: "No challenge assigned for today." });
+    }
+
+    const xpReward = challenge.xpReward || 50;
+    const previousLevel = user.level || 1;
+
+    user.xp = (user.xp || 0) + xpReward;
+    user.level = Math.floor(user.xp / 250) + 1;
+    const leveledUp = user.level > previousLevel;
+
+    user.lastChallengeDate = todayStr;
+    await user.save();
+
+    res.status(200).json({
+      message: "Challenge completed!",
+      xpEarned: xpReward,
+      totalXp: user.xp,
+      level: user.level,
+      leveledUp,
+    });
+  } catch (error) {
+    console.error("Error completing challenge:", error);
+    res.status(500).json({ message: "Failed to complete challenge" });
+  }
+};
+
+// Export both functions
+module.exports = {
+  completeChallenge,
+  getDailyChallenge,
+};

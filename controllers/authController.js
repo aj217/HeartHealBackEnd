@@ -58,7 +58,6 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate required fields.
     if (!email || !password) {
       return res
         .status(400)
@@ -70,14 +69,21 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Compare the provided password with the hashed password.
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const token = generateToken(user._id);
-    res.json({ token });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "Strict",
+      secure: false, //  Set to true in production with HTTPS
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
+
+    res.json({ message: "Login successful" });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: error.message });
@@ -167,8 +173,9 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// LOGOUT - Basic implementation.
+// LOGOUT
 exports.logout = async (req, res) => {
+  res.clearCookie("token");
   res.json({ message: "User logged out successfully" });
 };
 

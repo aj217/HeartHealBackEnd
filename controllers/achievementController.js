@@ -1,23 +1,28 @@
-const Journal = require("../models/Journal");
+const Achievement = require("../models/Achievement");
 const Milestone = require("../models/Milestone");
-const Achievement = require("../models/Achievement"); // Import Achievement model
 
+// @desc Get earned achievements for the logged-in user
+// @route GET /api/achievements
+// @access Private
 const getAchievements = async (req, res) => {
   try {
-    // Get Earned Achievement IDs
-    const earnedAchievements = await Milestone.find({ user: req.user.id })
-      .populate("achievement")
-      .select("achievement -_id");
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-    // Map Achievements to Include Earned Status and Details
-    const achievements = earnedAchievements.map((milestone) => {
-      return {
-        name: milestone.achievement.name,
-        description: milestone.achievement.description,
-        icon: milestone.achievement.icon,
-        earned: true,
-      };
-    });
+    // Fetch milestones where user has unlocked an achievement
+    const earned = await Milestone.find({ user: req.user._id }).populate(
+      "achievementId"
+    );
+
+    // Format the response
+    const achievements = earned.map((milestone) => ({
+      name: milestone.achievementId.name,
+      description: milestone.achievementId.description,
+      icon: milestone.achievementId.icon,
+      earned: true,
+      achievedAt: milestone.achievedAt,
+    }));
 
     res.json(achievements);
   } catch (error) {
@@ -26,4 +31,6 @@ const getAchievements = async (req, res) => {
   }
 };
 
-module.exports = { getAchievements };
+module.exports = {
+  getAchievements,
+};
