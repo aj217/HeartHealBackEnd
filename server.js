@@ -8,7 +8,6 @@ const compression = require("compression");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
-const cookieParser = require("cookie-parser");
 
 // Route files
 const authRoutes = require("./routes/authRoutes");
@@ -35,10 +34,9 @@ connectDB().catch((err) => {
   process.exit(1);
 });
 
-// Initialize Express app
 const app = express();
 
-// Ensure the uploads folder exists.
+// Ensure uploads folder exists
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
@@ -46,20 +44,12 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.use(express.json());
-app.use(cookieParser());
 
-// CORS fix for frontend running on 127.0.0.1:5500
+// CORS for frontend at localhost:5500 (no cookies needed)
 const allowedOrigins = ["http://localhost:5500", "http://127.0.0.1:5500"];
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
+    origin: allowedOrigins,
   })
 );
 
@@ -67,7 +57,7 @@ app.use(compression());
 app.use(helmet());
 app.use(morgan("combined"));
 
-// Serve static files from /uploads with correct headers
+// Static file serving for uploaded images
 app.use(
   "/uploads",
   (req, res, next) => {
@@ -78,7 +68,7 @@ app.use(
   express.static(path.join(__dirname, "uploads"))
 );
 
-// Apply rate limiting to all API routes
+// Rate limiter
 app.use("/api", apiLimiter);
 
 // API Routes
@@ -93,15 +83,15 @@ app.use("/api/challenges", challengeRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/recommendations", recommendationsRoutes);
 
-// Home Route
+// Home route
 app.get("/", (req, res) => res.send("Backend Running!"));
 
-// 404 Route Handling (for unknown routes)
+// 404 route
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found!" });
 });
 
-// Global error handler to catch Multer errors and others.
+// Handle multer errors and others
 app.use((err, req, res, next) => {
   console.error(err);
   if (err instanceof multer.MulterError) {
@@ -110,21 +100,20 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Custom error handling middleware
+// Global error handler
 app.use(errorHandler);
 
-// Handle Unhandled Promise Rejections
+// Exit handling
 process.on("unhandledRejection", (err) => {
   console.error(`Unhandled Promise Rejection: ${err.message}`);
   process.exit(1);
 });
 
-// Handle Uncaught Exceptions
 process.on("uncaughtException", (err) => {
   console.error(`Uncaught Exception: ${err.message}`);
   process.exit(1);
 });
 
-// Start Server
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

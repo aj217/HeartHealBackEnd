@@ -10,7 +10,7 @@ const {
   updateProfile,
 } = require("../controllers/authController");
 const protect = require("../middleware/authMiddleware");
-const upload = require("../middleware/upload"); 
+const upload = require("../middleware/upload");
 
 const router = express.Router();
 
@@ -21,15 +21,19 @@ const loginLimiter = rateLimit({
   message: "Too many login attempts, please try again later.",
 });
 
-router.post("/signup", signup);
-router.post("/login", loginLimiter, login);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password/:token", resetPassword);
-router.post("/logout", logout);
-router.get("/profile", protect, getProfile);
+router.post("/signup", authController.signup);
+router.post("/login", authController.login);
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/reset-password/:token", authController.resetPassword);
+router.get("/logout", authController.logout);
 
-// Apply the upload middleware to the update route
-router.put("/update", protect, upload.single("profilePicture"), updateProfile);
+router.get("/profile", protect, authController.getProfile);
+router.put(
+  "/update",
+  protect,
+  upload.single("profilePicture"),
+  authController.updateProfile
+);
 
 // Email verification (placeholder)
 router.get("/verify-email/:token", (req, res) => {
