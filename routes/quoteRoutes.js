@@ -17,7 +17,7 @@ const quoteLimiter = rateLimit({
   message: "Too many requests, please slow down.",
 });
 
-// GET /random - Returns a random inspirational quote
+// Returns a random inspirational quote
 router.get("/random", quoteLimiter, async (req, res) => {
   const cacheKey = "random-quote";
   const cachedQuote = cache.get(cacheKey);

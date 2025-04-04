@@ -2,7 +2,7 @@ const Challenge = require("../models/Challenge");
 const User = require("../models/User");
 const { selectDailyChallenge } = require("../utils/selectDailyChallenge");
 
-// GET /api/challenges/daily
+// GET daily challenges
 const getDailyChallenge = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -29,7 +29,7 @@ const getDailyChallenge = async (req, res) => {
   }
 };
 
-// POST /api/challenges/complete
+// POST completed challenge
 const completeChallenge = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {

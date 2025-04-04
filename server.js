@@ -18,7 +18,6 @@ const musicRoutes = require("./routes/musicRoutes");
 const affirmationRoutes = require("./routes/affirmationRoutes");
 const milestoneRoutes = require("./routes/milestoneRoutes");
 const challengeRoutes = require("./routes/challengeRoutes");
-const recommendationsRoutes = require("./routes/recommendationsRoutes");
 const achievementRoutes = require("./routes/achievementRoutes");
 
 // Error and rate limiting middleware/configurations
@@ -89,7 +88,6 @@ app.use("/api/milestones", milestoneRoutes);
 app.use("/api/affirmations", affirmationRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/achievements", achievementRoutes);
-app.use("/api/recommendations", recommendationsRoutes);
 
 // Home Route
 app.get("/", (req, res) => res.send("Backend Running!"));

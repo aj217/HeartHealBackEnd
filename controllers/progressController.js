@@ -1,6 +1,6 @@
 const Journal = require("../models/Journal");
 
-// 🧠 Utility to calculate streak from journal dates
+// Utility to calculate streak from journal dates
 function calculateStreak(dates) {
   const sorted = dates
     .map((d) => new Date(d).setHours(0, 0, 0, 0))
@@ -21,7 +21,7 @@ function calculateStreak(dates) {
   return streak;
 }
 
-// 📊 Get dashboard progress
+// Get dashboard progress
 const getProgress = async (req, res) => {
   try {
     const userId = req.user.id;

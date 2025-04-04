@@ -20,7 +20,6 @@ router.get("/", affirmationLimiter, async (req, res) => {
   const category = req.query.category || "general";
   const skip = (page - 1) * limit;
 
-  // Check cache
   const cacheKey = `affirmations-${category}-${page}-${limit}`;
   const cachedData = cache.get(cacheKey);
   if (cachedData) return res.json(cachedData);
@@ -43,23 +42,6 @@ router.get("/", affirmationLimiter, async (req, res) => {
   } catch (error) {
     console.error("Error fetching affirmations:", error.message);
     res.status(500).json({ message: "Error fetching affirmations" });
-  }
-});
-
-// Add a New Affirmation
-router.post("/", async (req, res) => {
-  try {
-    const { text, category } = req.body;
-    const newAffirmation = new Affirmation({ text, category });
-    await newAffirmation.save();
-
-    // Clear cache when new affirmation is added
-    cache.flushAll();
-
-    res.status(201).json(newAffirmation);
-  } catch (error) {
-    console.error("Error saving affirmation:", error.message);
-    res.status(500).json({ message: "Error saving affirmation" });
   }
 });
 

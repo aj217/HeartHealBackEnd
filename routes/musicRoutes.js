@@ -11,7 +11,7 @@ const router = express.Router();
 const cache = new NodeCache({ stdTTL: 3600 }); // Cache for 1 hour
 let accessToken = null;
 
-// --- Get Spotify Access Token ---
+// Get Spotify Access Token
 const getSpotifyToken = async () => {
   try {
     const response = await axios.post(
@@ -38,11 +38,11 @@ const getSpotifyToken = async () => {
   }
 };
 
-// --- Initial Token + Auto Refresh ---
+// Initial Token + Auto Refresh
 getSpotifyToken();
 setInterval(getSpotifyToken, 3600 * 1000); // Refresh every hour
 
-// --- Middleware: Ensure Token Exists ---
+// Middleware: Ensure Token Exists 
 const ensureSpotifyToken = async (req, res, next) => {
   if (!accessToken) {
     console.log("Acquiring Spotify token...");
@@ -51,14 +51,14 @@ const ensureSpotifyToken = async (req, res, next) => {
   next();
 };
 
-// --- Rate Limiting ---
+// Rate Limiting
 const musicLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 20,
   message: "Too many requests. Please try again later.",
 });
 
-// --- SEARCH Route ---
+// SEARCH Route
 router.get(
   "/search",
   protect,
@@ -116,7 +116,7 @@ router.get(
   }
 );
 
-// --- MOOD-BASED MUSIC Route ---
+// MOOD-BASED MUSIC Route
 router.get("/spotify", ensureSpotifyToken, async (req, res) => {
   const { mood, limit = 10 } = req.query;
   if (!mood)
@@ -172,7 +172,7 @@ router.get("/spotify", ensureSpotifyToken, async (req, res) => {
   }
 });
 
-// --- Search History Route ---
+// Search History Route
 router.get("/history", protect, async (req, res) => {
   try {
     const history = await Music.find({ user: req.user.id }).sort({
