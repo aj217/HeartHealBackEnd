@@ -46,7 +46,12 @@ if (!fs.existsSync(uploadsDir)) {
 app.use(express.json());
 
 // CORS fix for frontend running on 127.0.0.1:5500
-const allowedOrigins = ["http://localhost:5500", "http://127.0.0.1:5500"];
+const allowedOrigins = [
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "https://aj217.github.io",
+];
+
 app.use(
   cors({
     origin: function (origin, callback) {
