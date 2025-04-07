@@ -55,6 +55,11 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
+      const allowedOrigins = [
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "https://aj217.github.io",
+      ];
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -62,6 +67,15 @@ app.use(
       }
     },
     credentials: true,
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+    ],
+    exposedHeaders: ["Authorization"],
   })
 );
 
