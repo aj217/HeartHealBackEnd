@@ -77,79 +77,79 @@ const achievementCriteria = [
 
 // Save Journal Entry
 const saveJournal = async (req, res) => {
-  try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+  // try {
+  if (!req.user || !req.user._id) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-    const { text, mood } = req.body;
+  const { text, mood } = req.body;
 
-    // Validate plain text
-    const plainText = text.replace(/<[^>]*>/g, "").trim();
-    if (!plainText) {
-      return res.status(400).json({
-        message: "Your journal is empty. Please write something.",
-      });
-    }
+  // Validate plain text
+  const plainText = text.replace(/<[^>]*>/g, "").trim();
+  if (!plainText) {
+    return res.status(400).json({
+      message: "Your journal is empty. Please write something.",
+    });
+  }
 
-    // Sentiment & mood handling
-    const sentimentAnalysis = sentiment.analyze(text);
-    const suggestedMood = getSuggestedMood(sentimentAnalysis.score);
+  // Sentiment & mood handling
+  const sentimentAnalysis = sentiment.analyze(text);
+  const suggestedMood = getSuggestedMood(sentimentAnalysis.score);
 
-    const images = req.files
-      ? req.files.map((file) => `/uploads/${file.filename}`)
-      : [];
+  const images = req.files
+    ? req.files.map((file) => `/uploads/${file.filename}`)
+    : [];
 
-    const journal = new Journal({
+  const journal = new Journal({
+    user: req.user._id,
+    text,
+    mood: mood || suggestedMood,
+    images,
+    moodAnalysis: JSON.stringify(sentimentAnalysis),
+  });
+
+  await journal.save();
+  console.log("Journal saved:", journal);
+
+  // Milestone check
+  const unlockedMilestones = [];
+
+  for (const achievement of achievementCriteria) {
+    const alreadyUnlocked = await Milestone.findOne({
       user: req.user._id,
-      text,
-      mood: mood || suggestedMood,
-      images,
-      moodAnalysis: JSON.stringify(sentimentAnalysis),
+      milestoneType: achievement.name,
     });
 
-    await journal.save();
-    console.log("Journal saved:", journal);
+    const criteriaMet = await achievement.criteria(req.user);
 
-    // Milestone check
-    const unlockedMilestones = [];
+    if (!alreadyUnlocked && criteriaMet) {
+      const badge = await Achievement.findOne({ name: achievement.name });
+      if (!badge) {
+        console.warn(`Achievement not found: ${achievement.name}`);
+        continue;
+      }
 
-    for (const achievement of achievementCriteria) {
-      const alreadyUnlocked = await Milestone.findOne({
+      const milestone = new Milestone({
         user: req.user._id,
         milestoneType: achievement.name,
+        achievementId: badge._id,
+        achievedAt: new Date(),
       });
 
-      const criteriaMet = await achievement.criteria(req.user);
-
-      if (!alreadyUnlocked && criteriaMet) {
-        const badge = await Achievement.findOne({ name: achievement.name });
-        if (!badge) {
-          console.warn(`Achievement not found: ${achievement.name}`);
-          continue;
-        }
-
-        const milestone = new Milestone({
-          user: req.user._id,
-          milestoneType: achievement.name,
-          achievementId: badge._id,
-          achievedAt: new Date(),
-        });
-
-        await milestone.save();
-        console.log(`Milestone unlocked: ${achievement.name}`);
-        unlockedMilestones.push(achievement.name);
-      }
+      await milestone.save();
+      console.log(`Milestone unlocked: ${achievement.name}`);
+      unlockedMilestones.push(achievement.name);
     }
-
-    res.status(201).json({
-      journal,
-      unlockedMilestones,
-    });
-  } catch (error) {
-    console.error("Error saving journal:", error);
-    res.status(500).json({ message: "Error saving journal entry" });
   }
+
+  res.status(201).json({
+    journal,
+    unlockedMilestones,
+  });
+  // } catch (error) {
+  //   console.error("Error saving journal:", error);
+  //   res.status(500).json({ message: "Error saving journal entry" });
+  // }
 };
 
 // Get paginated journals
