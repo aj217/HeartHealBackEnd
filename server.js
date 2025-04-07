@@ -42,16 +42,11 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
-// Middleware
-app.use(express.json());
+// Body parsers with increased limits (important!)
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// CORS fix for frontend running on 127.0.0.1:5500
-const allowedOrigins = [
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "https://aj217.github.io",
-];
-
+// CORS fix for frontend running on 127.0.0.1:5500 and GitHub Pages
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -83,7 +78,7 @@ app.use(compression());
 app.use(helmet());
 app.use(morgan("combined"));
 
-// Serve static files from /uploads with correct headers
+// Serve static files from /uploads with proper headers
 app.use(
   "/uploads",
   (req, res, next) => {
@@ -116,7 +111,7 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found!" });
 });
 
-// Global error handler to catch Multer errors and others.
+// Global error handler to catch Multer errors and others
 app.use((err, req, res, next) => {
   console.error(err);
   if (err instanceof multer.MulterError) {
