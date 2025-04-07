@@ -79,11 +79,12 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save();
 
-    await sendEmail(
-      user.email,
-      "Password Reset Request",
-      `Reset your password here: http://localhost:5500/?page=reset&token=${resetToken}`
-    );
+   await sendEmail(
+     user.email,
+     "Password Reset Request",
+     `Reset your password here: https://aj217.github.io/HeartHealFrontEnd/?page=reset&token=${resetToken}`
+   );
+
 
     res.json({ message: "Reset email sent" });
   } catch (error) {
