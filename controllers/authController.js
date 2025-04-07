@@ -79,12 +79,13 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save();
 
-   await sendEmail(
-     user.email,
-     "Password Reset Request",
-     `Reset your password here: https://aj217.github.io/HeartHealFrontEnd/?page=reset&token=${resetToken}`
-   );
-
+    const frontendUrl =
+      process.env.FRONTEND_BASE_URL || "http://localhost:5500";
+    await sendEmail(
+      user.email,
+      "Password Reset Request",
+      `Reset your password here: ${frontendUrl}/?page=reset&token=${resetToken}`
+    );
 
     res.json({ message: "Reset email sent" });
   } catch (error) {
@@ -146,7 +147,7 @@ exports.getProfile = async (req, res) => {
       name: user.name,
       email: user.email,
       bio: user.bio,
-      level: user.level, 
+      level: user.level,
       xp: user.xp,
       profilePicture: user.profilePicture || null,
       createdAt: user.createdAt,
