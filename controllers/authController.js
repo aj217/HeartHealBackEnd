@@ -84,7 +84,7 @@ exports.forgotPassword = async (req, res) => {
     await sendEmail(
       user.email,
       "Password Reset Request",
-      `Reset your password here: ${frontendUrl}/?page=reset&token=${resetToken}`
+      `Reset your password here: ${process.env.FRONTEND_BASE_URL}/?page=reset&token=${resetToken}`
     );
 
     res.json({ message: "Reset email sent" });
@@ -180,3 +180,4 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
