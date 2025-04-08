@@ -35,6 +35,7 @@ connectDB().catch((err) => {
 
 // Initialize Express app
 const app = express();
+app.set("trust proxy", 1); // trust first proxy (Nginx)
 
 // Ensure the uploads folder exists.
 const uploadsDir = path.join(__dirname, "uploads");
