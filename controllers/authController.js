@@ -82,6 +82,8 @@ exports.forgotPassword = async (req, res) => {
 
     const frontendUrl =
       process.env.FRONTEND_BASE_URL || "http://localhost:5500";
+    console.log("FRONTEND_BASE_URL:", frontendUrl);
+
 
     await sendEmail(
       user.email,
