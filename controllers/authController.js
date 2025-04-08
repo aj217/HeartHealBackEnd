@@ -1,9 +1,9 @@
+require("dotenv").config();
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
-require("dotenv").config();
 
 const isStrongPassword = (password) => {
   const regex = /^(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
