@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
+require("dotenv").config();
 
 const isStrongPassword = (password) => {
   const regex = /^(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -81,10 +82,11 @@ exports.forgotPassword = async (req, res) => {
 
     const frontendUrl =
       process.env.FRONTEND_BASE_URL || "http://localhost:5500";
+
     await sendEmail(
       user.email,
       "Password Reset Request",
-      `Reset your password here: ${process.env.FRONTEND_BASE_URL}/?page=reset&token=${resetToken}`
+      `Reset your password here: ${frontendUrl}/?page=reset&token=${resetToken}`
     );
 
     res.json({ message: "Reset email sent" });
@@ -180,4 +182,3 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
