@@ -2,6 +2,10 @@
 
 This is the backend of HeartHeal built with Node.js, Express, and MongoDB. It handles all data operations, user authentication, media uploads, .txt generation, and XP tracking.
 
+## Note
+
+The backend is currently running locally
+
 ## API Base URLs
 
 Use appropriate base URLs as per environment:
