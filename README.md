@@ -41,7 +41,7 @@ backend
 ## Getting Started
 
 1. Clone the repo:
-   git clone https://github.com/your-username/Heart-Heal-bn.git cd Heart-Heal-bn
+   https://github.com/aj217/HeartHealBackEnd.git
 
 2.  Install dependencies:
    npm install
