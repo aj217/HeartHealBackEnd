@@ -35,26 +35,28 @@ connectDB().catch((err) => {
 
 // Initialize Express app
 const app = express();
-app.set("trust proxy", 1); // trust first proxy (Nginx)
+app.set("trust proxy", 1);
 
-// Ensure the uploads folder exists.
+// Ensure the uploads folder exists
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
-// Body parsers with increased limits (important!)
+// Body parsers
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// CORS fix for frontend running on 127.0.0.1:5500 and GitHub Pages
+// ✅ CORS - Allow Vercel frontend + localhost
 app.use(
   cors({
     origin: function (origin, callback) {
       const allowedOrigins = [
         "http://localhost:5500",
         "http://127.0.0.1:5500",
+        "http://localhost:3000",
         "https://aj217.github.io",
+        "https://heart-heal-front-end.vercel.app",
       ];
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -63,7 +65,7 @@ app.use(
       }
     },
     credentials: true,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
     allowedHeaders: [
       "Origin",
       "X-Requested-With",
@@ -72,14 +74,14 @@ app.use(
       "Authorization",
     ],
     exposedHeaders: ["Authorization"],
-  })
+  }),
 );
 
 app.use(compression());
 app.use(helmet());
 app.use(morgan("combined"));
 
-// Serve static files from /uploads with proper headers
+// Serve static files from /uploads
 app.use(
   "/uploads",
   (req, res, next) => {
@@ -87,7 +89,7 @@ app.use(
     res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
     next();
   },
-  express.static(path.join(__dirname, "uploads"))
+  express.static(path.join(__dirname, "uploads")),
 );
 
 // Apply rate limiting to all API routes
@@ -107,12 +109,12 @@ app.use("/api/achievements", achievementRoutes);
 // Home Route
 app.get("/", (req, res) => res.send("Backend Running!"));
 
-// 404 Route Handling (for unknown routes)
+// 404 Route Handling
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found!" });
 });
 
-// Global error handler to catch Multer errors and others
+// Global error handler
 app.use((err, req, res, next) => {
   console.error(err);
   if (err instanceof multer.MulterError) {
