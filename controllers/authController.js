@@ -34,6 +34,18 @@ exports.signup = async (req, res) => {
     if (user) return res.status(400).json({ message: "User already exists" });
 
     user = await User.create({ name, email, password });
+    console.log("=== SIGNUP DEBUG ===");
+console.log("Email:", email);
+console.log("Incoming password length:", password.length);
+console.log("Stored password length:", user.password.length);
+console.log("Hash prefix:", user.password.substring(0, 7));
+
+const signupPasswordMatches = await bcrypt.compare(
+  password,
+  user.password
+);
+
+console.log("Password matches immediately after signup:", signupPasswordMatches);
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
@@ -47,30 +59,37 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("LOGIN EMAIL:", email);
-
     if (!email || !password) {
       return res.status(400).json({
         message: "Email and password are required.",
       });
     }
 
+    // Find user by email
     const user = await User.findOne({ email });
 
-    console.log("USER FOUND:", !!user);
-
     if (!user) {
+      console.log("=== LOGIN DEBUG ===");
+      console.log("Email:", email);
+      console.log("USER FOUND: false");
+
       return res.status(400).json({
         message: "DEBUG: User not found",
       });
     }
 
-    console.log("STORED PASSWORD:", user.password);
-    console.log("HASH START:", user.password?.substring(0, 7));
+    // Debug information
+    console.log("=== LOGIN DEBUG ===");
+    console.log("Email:", email);
+    console.log("USER FOUND: true");
+    console.log("Incoming password length:", password.length);
+    console.log("Stored password length:", user.password.length);
+    console.log("Hash prefix:", user.password.substring(0, 7));
 
+    // Compare entered password with stored bcrypt hash
     const isMatch = await bcrypt.compare(password, user.password);
 
-    console.log("PASSWORD MATCH:", isMatch);
+    console.log("Password match during login:", isMatch);
 
     if (!isMatch) {
       return res.status(400).json({
@@ -78,6 +97,7 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Generate JWT
     const token = generateToken(user._id);
 
     return res.json({
@@ -85,7 +105,7 @@ exports.login = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
+    console.error("Login error:", error);
 
     return res.status(500).json({
       message: "Server error",
