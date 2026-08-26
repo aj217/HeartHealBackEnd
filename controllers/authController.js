@@ -46,23 +46,50 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password)
-      return res
-        .status(400)
-        .json({ message: "Email and password are required." });
+
+    console.log("LOGIN EMAIL:", email);
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required.",
+      });
+    }
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+    console.log("USER FOUND:", !!user);
+
+    if (!user) {
+      return res.status(400).json({
+        message: "DEBUG: User not found",
+      });
+    }
+
+    console.log("STORED PASSWORD:", user.password);
+    console.log("HASH START:", user.password?.substring(0, 7));
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid credentials" });
+
+    console.log("PASSWORD MATCH:", isMatch);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "DEBUG: Password does not match",
+      });
+    }
 
     const token = generateToken(user._id);
-    res.json({ message: "Login successful", token });
+
+    return res.json({
+      message: "Login successful",
+      token,
+    });
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("LOGIN ERROR:", error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
