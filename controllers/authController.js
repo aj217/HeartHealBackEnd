@@ -34,12 +34,6 @@ exports.signup = async (req, res) => {
     if (user) return res.status(400).json({ message: "User already exists" });
 
     user = await User.create({ name, email, password });
-    console.log("=== SIGNUP DEBUG ===");
-console.log("Email:", email);
-console.log("Incoming password length:", password.length);
-console.log("Stored password length:", user.password.length);
-console.log("Hash prefix:", user.password.substring(0, 7));
-
 const signupPasswordMatches = await bcrypt.compare(
   password,
   user.password
@@ -77,15 +71,7 @@ exports.login = async (req, res) => {
         message: "DEBUG: User not found",
       });
     }
-
-    // Debug information
-    console.log("=== LOGIN DEBUG ===");
-    console.log("Email:", email);
-    console.log("USER FOUND: true");
-    console.log("Incoming password length:", password.length);
-    console.log("Stored password length:", user.password.length);
-    console.log("Hash prefix:", user.password.substring(0, 7));
-
+    
     // Compare entered password with stored bcrypt hash
     const isMatch = await bcrypt.compare(password, user.password);
 
